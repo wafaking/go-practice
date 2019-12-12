@@ -1,2 +1,2 @@
-# go-practice
-some demo for golang.
+# grpc-demo 
+some demo for grpc of golang.
