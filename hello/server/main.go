@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
-	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
@@ -70,11 +70,12 @@ func (c *Controller) SayMany(srv hello.Greeter_SayManyServer) error {
 func (c *Controller) ReplyMany(req *hello.HelloRequest, srv hello.Greeter_ReplyManyServer) error {
 	for i := 0; i < 10; i++ {
 		if err := srv.Send(&hello.HelloResponse{
-			Reply: fmt.Sprint("hello %s%d", req.Name, i),
+			Reply: fmt.Sprintf("hello %s%d.", req.Name, i),
 		}); err != nil {
 			log.Fatalf("Reply many err: %s", err)
 			return err
 		}
+		time.Sleep(time.Second)
 	}
 	return nil
 }
@@ -90,17 +91,19 @@ func (c *Controller) Talking(srv hello.Greeter_TalkingServer) error {
 			return err
 		}
 
-		var mm sync.Map
-		mm.Store(req.Name, fmt.Sprintf("%s ok", req.Name))
-		for {
-			if v, ok := mm.Load(req.Name); ok {
-				if err = srv.Send(
-					&hello.HelloResponse{
-						Reply: fmt.Sprintf("%s", v),
-					}); err != nil {
-					grpclog.Error("send err: %s", err)
-					return err
-				}
+		//var mm sync.Map
+		//mm.Store(req.Name, fmt.Sprintf("%s ok", req.Name))
+		//var mm = make(map[string]string)
+		var sli = make([]string, 0)
+		sli = append(sli, req.Name)
+
+		for i, v := range sli {
+			if err = srv.Send(
+				&hello.HelloResponse{
+					Reply: fmt.Sprintf("hi, I got it what you said %d time: %s, ", i, v),
+				}); err != nil {
+				grpclog.Error("send err: %s", err)
+				return err
 			}
 		}
 	}

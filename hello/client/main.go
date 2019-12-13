@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"google.golang.org/grpc"
@@ -27,7 +28,8 @@ func main() {
 
 	//FuncSayHello(client)
 	//FuncSayMany(client)
-	FuncReplyMany(client)
+	//FuncReplyMany(client)
+	FuncTalking(client)
 }
 
 func FuncSayHello(client hello.GreeterClient) {
@@ -66,29 +68,67 @@ func FunSayMany(client hello.GreeterClient) {
 }
 
 func FuncReplyMany(client hello.GreeterClient) {
-	client.ReplyMany(context.Background())
+	req := &hello.HelloRequest{
+		Name: "I am client, I send just one time",
+	}
+
+	srv, err := client.ReplyMany(context.Background(), req)
+	if err != nil {
+		grpclog.Fatalf("reply many failed, err: %s", err)
+		return
+	}
+	for {
+		resp, err := srv.Recv()
+		if err == io.EOF {
+			log.Println("resp recv end...")
+			break
+		} else if err != nil {
+			grpclog.Fatalf("stream recv err: %s\n", err)
+			break
+		}
+		log.Println("resp recv processing, resp:  ", resp.Reply)
+	}
+
 }
 
-//func (c *greeterClient) ReplyMany(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (Greeter_ReplyManyClient, error) {
-//	stream, err := c.cc.NewStream(ctx, &_Greeter_serviceDesc.Streams[1], "/hello.Greeter/ReplyMany", opts...)
-//	if err != nil {
-//		return nil, err
-//	}
-//	x := &greeterReplyManyClient{stream}
-//	if err := x.ClientStream.SendMsg(in); err != nil {
-//		return nil, err
-//	}
-//	if err := x.ClientStream.CloseSend(); err != nil {
-//		return nil, err
-//	}
-//	return x, nil
-//}
-//
-//func (c *greeterClient) Talking(ctx context.Context, opts ...grpc.CallOption) (Greeter_TalkingClient, error) {
-//	stream, err := c.cc.NewStream(ctx, &_Greeter_serviceDesc.Streams[2], "/hello.Greeter/Talking", opts...)
-//	if err != nil {
-//		return nil, err
-//	}
-//	x := &greeterTalkingClient{stream}
-//	return x, nil
-//}
+func FuncTalking(client hello.GreeterClient) {
+	waitc := make(chan struct{})
+	srv, err := client.Talking(context.Background())
+	if err != nil {
+		grpclog.Fatalf("Taling err: %s\n", err)
+		return
+	}
+	go func() {
+		//接收
+		for {
+			resp, err := srv.Recv()
+			if err == io.EOF {
+				log.Println("resp recv end...")
+				close(waitc) //读取完毕
+				break
+			} else if err != nil {
+				grpclog.Fatalf("stream recv err: %s\n", err)
+				break
+			}
+			log.Println("resp recv processing, resp:  ", resp.Reply)
+		}
+	}()
+
+	var sli []int
+	for i := 0; i < 10; i++ {
+		sli = append(sli, i)
+	}
+
+	for _, v := range sli {
+		//发送
+		var req = &hello.HelloRequest{
+			Name: fmt.Sprintf("i am %d", v),
+		}
+		if err := srv.Send(req); err != nil {
+			log.Fatalf("send err: %s", err)
+		}
+	}
+	srv.CloseSend()
+
+	<-waitc
+}
