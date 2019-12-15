@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./pkg/bootstrap-3.3.7-dist/css/bootstrap.min.css">
+</head>
+
+<body>
+    <table>
+
+    </table>
+    <div class="moveright paginator" style="margin: 0 20px 20px 0">
+        <nav aria-label="...">
+            <ul class="pagination" id="service_pagebox" style="display:inline-block">
+            </ul>
+        </nav>
+    </div>
+    <script src="http://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="./pkg/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(
+            function () {
+                get_service_list(1);
+            }
+        );
+
+        current_page = 1;
+        function get_service_list(page) {
+            $.ajax({
+                url: 'http://127.0.0.1:8080/hello?id='+page,//地址
+                dataType: 'json',//数据类型
+                type: 'GET',//类型
+                timeout: 2000,//超时
+                // Access-Control-Allow-Origin:true,
+                //请求成功
+                success: function (data, status) {
+                    $("table").empty();
+                    console.log("ok", data);
+                    count = data.Data.length;
+                    console.log(count)
+
+                    for (var i = 0; i < count; i++) {
+                        $("table").append("<tr><td>" + data.Data[i].Name + "</td></tr>")
+                    }
+
+                    pagination_func(data.Count, "#service_pagebox");
+                },
+                //失败/超时
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    console.log("fail");
+                }
+            })
+        };
+
+
+        function pagination_func(count, pagebox) {
+            debugger;
+            $(pagebox).empty()
+            var page_num = parseInt(count / 10);
+            if (count / 10 > page_num) {
+                page_num += 1
+            }
+            if (count > 0) {
+                $(pagebox).append('<span class="page-span">共<span>' + count + '</span>条</span><li class="prev"><span aria-label="Previous"><span aria-hidden="true">&laquo;</span></span></li>')
+
+                if (page_num < 7) {
+                    for (var i = 0; i < page_num; i++) {
+                        if (current_page == i + 1) {
+                            $(pagebox).append($('<li class="page_num active"><span>' + (i + 1) + '</span></li>'))
+                        } else {
+                            $(pagebox).append($('<li class="page_num"><span>' + (i + 1) + '</span></li>'))
+                        }
+                    }
+                }
+
+                if (page_num > 6) {
+                    for (var i = 0; i < 5; i++) {
+                        if (current_page == i + 1) {
+                            $(pagebox).append($('<li class="page_num active"><span>' + (i + 1) + '</span></li>'))
+                        } else {
+                            $(pagebox).append($('<li class="page_num"><span>' + (i + 1) + '</span></li>'))
+                        }
+                    }
+
+                    $(pagebox).append($('<li class="page_num right"><span>' + '...' + '</span></li>'));
+                    $(pagebox).append($('<li class="page_num"><span>' + page_num + '</span></li>'))
+                }
+
+                $(pagebox).append($('<li class="next"><span aria-label="Next"><span aria-hidden="true">&raquo;</span></span></li>'))
+                $(pagebox).off('click', '.prev')
+                $(pagebox).on('click', '.prev', function () {
+                    current_page -= 1;
+                    if ($("#service_pagebox .active").prev().find('span').text() == '...') {
+                        var index_page = parseInt($("#service_pagebox .active").find('span').text())
+                        $(pagebox).empty();
+                        $(pagebox).append('<span class="page-span">共<span>' + count + '</span>条</span><li class="prev"><span aria-label="Previous"><span aria-hidden="true">&laquo;</span></span></li>');
+                        $(pagebox).append($('<li class="page_num active"><span>1</span></li>'));
+                        if ((index_page - 1) < 5 || (index_page - 1) == 5) {
+                            $(pagebox).append($('<li class="page_num active"><span>2</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>3</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>4</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>5</span></li>'));
+                            $(pagebox).append($('<li class="page_num right"><span>' + '...' + '</span></li>'));
+                        } else if ((index_page - 1) > 5 && (page_num - index_page) > 5) {
+                            $(pagebox).append($('<li class="page_num left"><span>' + '...' + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page - 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page - 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page - 1) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num right"><span>' + '...' + '</span></li>'));
+                        } else if ((index_page - 1) > 5 && (page_num - index_page) < 5 || (index_page - 1) > 5 && (page_num - index_page) == 5) {
+                            $(pagebox).append($('<li class="page_num left"><span>' + '...' + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num active"><span>' + (page_num - 4) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 1) + '</span></li>'));
+                        }
+                        $(pagebox).append($('<li class="page_num right"><span>' + page_num + '</span></li>'));
+                        $(pagebox).append($('<li class="next"><span aria-label="Next"><span aria-hidden="true">&raquo;</span></span></li>'))
+                    }
+                    if (current_page > 1) {
+                        $('.page_num').removeClass('active');
+                        // get_service_list(null, current_page);
+                        get_service_list(current_page);
+                        for (var i = 0; i < $(".page_num").length; i++) {
+                            if ($(".page_num").eq(i).text() == current_page) {
+                                $(".page_num").eq(i).addClass("active")
+                            }
+                        }
+                    } else if (current_page == 1) {
+                        $('.prev').addClass('disabled');
+                    }
+
+                }
+                )
+                $(pagebox).off('click', '.next')
+                $(pagebox).on('click', '.next', function () {
+                    current_page += 1;
+                    if ($("#service_pagebox .active").next().find('span').text() == '...') {
+                        var index_page = parseInt($("#service_pagebox .active").find('span').text())
+                        $(pagebox).empty();
+                        $(pagebox).append('<span class="page-span">共<span>' + count + '</span>条</span><li class="prev"><span aria-label="Previous"><span aria-hidden="true">&laquo;</span></span></li>');
+                        $(pagebox).append($('<li class="page_num active"><span>1</span></li>'));
+                        $(pagebox).append($('<li class="page_num left"><span>' + '...' + '</span></li>'));
+                        if ((index_page + 4) > page_num || (index_page + 4) == page_num) {
+                            $(pagebox).append($('<li class="page_num active"><span>' + (page_num - 4) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 1) + '</span></li>'));
+
+                        } else if ((index_page + 4) < page_num) {
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page + 1) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page + 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page + 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num right"><span>' + '...' + '</span></li>'));
+                        }
+                        $(pagebox).append($('<li class="page_num right"><span>' + page_num + '</span></li>'));
+                        $(pagebox).append($('<li class="next"><span aria-label="Next"><span aria-hidden="true">&raquo;</span></span></li>'))
+                    }
+
+                    if (current_page < page_num) {
+                        $('.page_num').removeClass('active');
+                        // get_service_list(null, current_page);
+                        get_service_list(current_page);
+                        for (var i = 0; i < $(".page_num").length; i++) {
+                            if ($(".page_num").eq(i).text() == current_page) {
+                                $(".page_num").eq(i).addClass("active")
+                            }
+                        }
+                    } else if (current_page = page_num) {
+                        $('.next').addClass('disabled');
+                    }
+
+
+                })
+
+                $(pagebox).off('click', '.page_num')
+                $(pagebox).on('click', '.page_num', function () {
+                    $('.page_num').removeClass('active');
+                    $(this).addClass('active');
+                    if ($(this).find('span').text() == '...' && $(this).hasClass('left')) {
+                        index_page = parseInt($(this).next().find('span').text());
+                        $(pagebox).empty();
+                        $(pagebox).append('<span class="page-span">共<span>' + count + '</span>条</span><li class="prev"><span aria-label="Previous"><span aria-hidden="true">&laquo;</span></span></li>')
+                        $(pagebox).append($('<li class="page_num"><span>1</span></li>'));
+                        if ((index_page - 1) < 5) {
+                            current_page = 1
+                            $(pagebox).empty();
+                            $(pagebox).append('<span class="page-span">共<span>' + count + '</span>条</span><li class="prev"><span aria-label="Previous"><span aria-hidden="true">&laquo;</span></span></li>')
+                            $(pagebox).append($('<li class="page_num active"><span>1</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>2</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>3</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>4</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>5</span></li>'));
+                        } else if ((index_page - 1) == 5 || (index_page - 1) > 5) {
+                            current_page = index_page - 3
+                            $(pagebox).append($('<li class="page_num left"><span>' + '...' + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num active"><span>' + (index_page - 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page - 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page - 1) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page) + '</span></li>'));
+                        }
+                        $(pagebox).append($('<li class="page_num right"><span>' + '...' + '</span></li>'));
+                        $(pagebox).append($('<li class="page_num"><span>' + page_num + '</span></li>'));
+                        $(pagebox).append($('<li class="next"><span aria-label="Next"><span aria-hidden="true">&raquo;</span></span></li>'))
+                    } else if ($(this).find('span').text() == '...' && $(this).hasClass('right')) {
+                        index_page = parseInt($(this).prev().find('span').text())
+                        $(pagebox).empty();
+                        $(pagebox).append('<span class="page-span">共<span>' + count + '</span>条</span><li class="prev"><span aria-label="Previous"><span aria-hidden="true">&laquo;</span></span></li>')
+                        $(pagebox).append($('<li class="page_num"><span>1</span></li>'));
+                        $(pagebox).append($('<li class="page_num left"><span>' + '...' + '</span></li>'));
+                        if ((page_num - index_page) < 5) {
+                            current_page = page_num - 4
+                            $(pagebox).append($('<li class="page_num active"><span>' + (page_num - 4) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (page_num - 1) + '</span></li>'));
+                        } else if ((page_num - index_page) == 5 || (page_num - index_page) > 5) {
+                            current_page = index_page
+                            $(pagebox).append($('<li class="page_num active"><span>' + (index_page) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page + 1) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page + 2) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num"><span>' + (index_page + 3) + '</span></li>'));
+                            $(pagebox).append($('<li class="page_num right"><span>' + '...' + '</span></li>'));
+                        }
+                        $(pagebox).append($('<li class="page_num"><span>' + page_num + '</span></li>'));
+                        $(pagebox).append($('<li class="next"><span aria-label="Next"><span aria-hidden="true">&raquo;</span></span></li>'))
+
+                    } else {
+                        current_page = parseInt($(this).find('span').text());
+                    }
+
+                    get_service_list(current_page);
+                    $(this).addClass('active');
+
+                })
+            }
+
+        }
+    </script>
+
+</body>
+
+</html>
